@@ -44,7 +44,10 @@ func exportGPIO(p Pin) {
 		os.Exit(1)
 	}
 	defer export.Close()
-	export.Write([]byte(strconv.Itoa(int(p.Number))))
+	_, err = export.Write([]byte(strconv.Itoa(int(p.Number))))
+	if err != nil {
+		fmt.Printf("failed to write, %s", err)
+	}
 }
 
 func unexportGPIO(p Pin) {
@@ -54,7 +57,10 @@ func unexportGPIO(p Pin) {
 		os.Exit(1)
 	}
 	defer export.Close()
-	export.Write([]byte(strconv.Itoa(int(p.Number))))
+	_, err = export.Write([]byte(strconv.Itoa(int(p.Number))))
+	if err != nil {
+		fmt.Printf("failed to write, %s", err)
+	}
 }
 
 func setDirection(p Pin, d direction, initialValue uint) {
@@ -67,13 +73,16 @@ func setDirection(p Pin, d direction, initialValue uint) {
 
 	switch {
 	case d == inDirection:
-		dir.Write([]byte("in"))
+		_, err = dir.Write([]byte("in"))
 	case d == outDirection && initialValue == 0:
-		dir.Write([]byte("low"))
+		_, err = dir.Write([]byte("low"))
 	case d == outDirection && initialValue == 1:
-		dir.Write([]byte("high"))
+		_, err = dir.Write([]byte("high"))
 	default:
 		panic(fmt.Sprintf("setDirection called with invalid direction or initialValue, %d, %d", d, initialValue))
+	}
+	if err != nil {
+		fmt.Printf("failed to set direction, %s", err)
 	}
 }
 
@@ -87,15 +96,18 @@ func setEdgeTrigger(p Pin, e Edge) {
 
 	switch e {
 	case EdgeNone:
-		edge.Write([]byte("none"))
+		_, err = edge.Write([]byte("none"))
 	case EdgeRising:
-		edge.Write([]byte("rising"))
+		_, err = edge.Write([]byte("rising"))
 	case EdgeFalling:
-		edge.Write([]byte("falling"))
+		_, err = edge.Write([]byte("falling"))
 	case EdgeBoth:
-		edge.Write([]byte("both"))
+		_, err = edge.Write([]byte("both"))
 	default:
 		panic(fmt.Sprintf("setEdgeTrigger called with invalid edge %d", e))
+	}
+	if err != nil {
+		fmt.Printf("failed to write, %s", err)
 	}
 }
 
@@ -108,11 +120,14 @@ func setLogicLevel(p Pin, l LogicLevel) error {
 
 	switch l {
 	case ActiveHigh:
-		level.Write([]byte("0"))
+		_, err = level.Write([]byte("0"))
 	case ActiveLow:
-		level.Write([]byte("1"))
+		_, err = level.Write([]byte("1"))
 	default:
-		return errors.New("Invalid logic level setting.")
+		return errors.New("invalid logic level setting")
+	}
+	if err != nil {
+		fmt.Printf("failed to write, %s", err)
 	}
 	return nil
 }
@@ -133,7 +148,9 @@ func openPin(p Pin, write bool) Pin {
 
 func readPin(p Pin) (val uint, err error) {
 	file := p.f
-	file.Seek(0, 0)
+	if _, err := file.Seek(0, 0); err != nil {
+		fmt.Printf("failed to seek file, %s", err)
+	}
 	buf := make([]byte, 1)
 	_, err = file.Read(buf)
 	if err != nil {

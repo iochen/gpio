@@ -2,6 +2,7 @@ package gpio
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 )
@@ -47,7 +48,9 @@ func NewOutput(p uint, initHigh bool) Pin {
 // Close releases the resources related to Pin. This doen't unexport Pin, use Cleanup() instead
 func (p Pin) Close() {
 	if p.f != nil {
-		p.f.Close()
+		if err := p.f.Close(); err != nil {
+			fmt.Printf("failed to close pin, %s", err)
+		}
 		p.f = nil
 	}
 }

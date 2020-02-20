@@ -141,7 +141,9 @@ func (w *Watcher) removeFd(fd uintptr) {
 		}
 	}
 	pin := w.pins[fd]
-	pin.f.Close()
+	if err := pin.f.Close(); err != nil {
+		fmt.Printf("failed to close pin file, %s", err)
+	}
 	delete(w.pins, fd)
 }
 
@@ -215,7 +217,10 @@ func (w *Watcher) AddPin(p uint) {
 // The pin provided should be the pin known by the kernel.
 func (w *Watcher) AddPinWithEdgeAndLogic(p uint, edge Edge, logicLevel LogicLevel) {
 	pin := NewInput(p)
-	setLogicLevel(pin, logicLevel)
+	if err := setLogicLevel(pin, logicLevel); err != nil {
+		fmt.Printf("failed to set logical level, %s", err)
+		os.Exit(1)
+	}
 	setEdgeTrigger(pin, edge)
 	w.cmdChan <- watcherCmd{
 		pin:    pin,
