@@ -66,6 +66,7 @@ const notificationLen = 32
 type Watcher struct {
 	pins         map[uintptr]Pin
 	fds          fdHeap
+	lastValue    int
 	cmdChan      chan watcherCmd
 	Notification chan WatcherNotification
 }
@@ -77,6 +78,7 @@ func NewWatcher() *Watcher {
 		fds:          fdHeap{},
 		cmdChan:      make(chan watcherCmd, watcherCmdChanLen),
 		Notification: make(chan WatcherNotification, notificationLen),
+		lastValue:    -1,
 	}
 	heap.Init(&w.fds)
 	go w.watch()
@@ -240,6 +242,10 @@ func (w *Watcher) RemovePin(p uint) {
 // Users can either use Watch() or receive from Watcher.Notification directly
 func (w *Watcher) Watch() (p uint, v uint) {
 	notification := <-w.Notification
+	if int(notification.Value) == w.lastValue {
+		return w.Watch()
+	}
+	w.lastValue = int(notification.Value)
 	return notification.Pin, notification.Value
 }
 
