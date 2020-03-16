@@ -50,11 +50,11 @@ func (h *fdHeap) Pop() interface{} {
 }
 
 func (h fdHeap) FdSet() *syscall.FdSet {
-	fdset := &syscall.FdSet{}
+	fdSet := &syscall.FdSet{}
 	for _, val := range h {
-		fdset.Bits[val/64] |= 1 << (uint(val) % 64)
+		fdSet.Bits[val/64] |= 1 << (uint(val) % 64)
 	}
-	return fdset
+	return fdSet
 }
 
 const watcherCmdChanLen = 32
@@ -85,9 +85,9 @@ func NewWatcher() *Watcher {
 	return w
 }
 
-func (w *Watcher) notify(fdset *syscall.FdSet) {
+func (w *Watcher) notify(fdSet *syscall.FdSet) {
 	for _, fd := range w.fds {
-		if (fdset.Bits[fd/64] & (1 << (uint(fd) % 64))) != 0 {
+		if (fdSet.Bits[fd/64] & (1 << (uint(fd) % 64))) != 0 {
 			pin := w.pins[fd]
 			val, err := pin.Read()
 			if err != nil {
@@ -95,7 +95,7 @@ func (w *Watcher) notify(fdset *syscall.FdSet) {
 					w.removeFd(fd)
 					continue
 				}
-				fmt.Printf("failed to read pinfile, %s", err)
+				fmt.Printf("failed to read pinfile, %s\n", err)
 				os.Exit(1)
 			}
 			msg := WatcherNotification{
@@ -111,18 +111,18 @@ func (w *Watcher) notify(fdset *syscall.FdSet) {
 }
 
 func (w *Watcher) fdSelect() {
-	timeval := &syscall.Timeval{
+	timeVal := &syscall.Timeval{
 		Sec:  1,
 		Usec: 0,
 	}
-	fdset := w.fds.FdSet()
-	changed, err := doSelect(int(w.fds[0])+1, nil, nil, fdset, timeval)
+	fdSet := w.fds.FdSet()
+	changed, err := doSelect(int(w.fds[0])+1, nil, nil, fdSet, timeVal)
 	if err != nil {
-		fmt.Printf("failed to call syscall.Select, %s", err)
+		fmt.Printf("failed to call syscall.Select, %s\n", err)
 		os.Exit(1)
 	}
 	if changed {
-		w.notify(fdset)
+		w.notify(fdSet)
 	}
 }
 
@@ -142,7 +142,7 @@ func (w *Watcher) removeFd(fd uintptr) {
 	}
 	pin := w.pins[fd]
 	if err := pin.f.Close(); err != nil {
-		fmt.Printf("failed to close pin file, %s", err)
+		fmt.Printf("failed to close pin file, %s\n", err)
 	}
 	delete(w.pins, fd)
 }
@@ -194,7 +194,7 @@ func (w *Watcher) watch() {
 		if len(w.fds) != 0 {
 			w.fdSelect()
 		} else {
-			// so that we don't churn when the fdset is empty, sleep as if in select call
+			// so that we don't churn when the fdSet is empty, sleep as if in select call
 			time.Sleep(1 * time.Second)
 		}
 		if w.recv() == false {
@@ -218,7 +218,7 @@ func (w *Watcher) AddPin(p uint) {
 func (w *Watcher) AddPinWithEdgeAndLogic(p uint, edge Edge, logicLevel LogicLevel) {
 	pin := NewInput(p)
 	if err := setLogicLevel(pin, logicLevel); err != nil {
-		fmt.Printf("failed to set logical level, %s", err)
+		fmt.Printf("failed to set logical level, %s\n", err)
 		os.Exit(1)
 	}
 	setEdgeTrigger(pin, edge)
@@ -243,7 +243,6 @@ func (w *Watcher) RemovePin(p uint) {
 // It returns the pin which changed and its new value
 // Because the Watcher is not perfectly realtime it may miss very high frequency changes
 // If that happens, it's possible to see consecutive changes with the same value
-// Also, if the input is connected to a mechanical switch, the user of this library must deal with debouncing
 // Users can either use Watch() or receive from Watcher.Notification directly
 func (w *Watcher) Watch() (p uint, v uint) {
 	notification := <-w.Notification

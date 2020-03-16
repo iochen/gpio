@@ -82,7 +82,7 @@ func setDirection(p Pin, d direction, initialValue uint) {
 		panic(fmt.Sprintf("setDirection called with invalid direction or initialValue, %d, %d", d, initialValue))
 	}
 	if err != nil {
-		fmt.Printf("failed to set direction, %s", err)
+		fmt.Printf("failed to set direction, %s\n", err)
 	}
 }
 
@@ -127,7 +127,7 @@ func setLogicLevel(p Pin, l LogicLevel) error {
 		return errors.New("invalid logic level setting")
 	}
 	if err != nil {
-		fmt.Printf("failed to write, %s", err)
+		fmt.Printf("failed to write, %s\n", err)
 	}
 	return nil
 }
@@ -149,7 +149,7 @@ func openPin(p Pin, write bool) Pin {
 func readPin(p Pin) (val uint, err error) {
 	file := p.f
 	if _, err := file.Seek(0, 0); err != nil {
-		fmt.Printf("failed to seek file, %s", err)
+		fmt.Printf("failed to seek file, %s\n", err)
 	}
 	buf := make([]byte, 1)
 	_, err = file.Read(buf)

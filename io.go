@@ -49,7 +49,7 @@ func NewOutput(p uint, initHigh bool) Pin {
 func (p Pin) Close() {
 	if p.f != nil {
 		if err := p.f.Close(); err != nil {
-			fmt.Printf("failed to close pin, %s", err)
+			fmt.Printf("failed to close pin, %s\n", err)
 		}
 		p.f = nil
 	}
